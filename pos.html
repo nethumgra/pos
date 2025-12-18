@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mudalali Mama - POS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; margin: 0; background-color: #f4f7f6; height: 100vh; display: flex; flex-direction: column; }
+        header { background-color: #ffffff; padding: 15px 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; z-index: 100; }
+        .logo { font-size: 24px; font-weight: 600; color: #ff6b6b; display: flex; align-items: center; gap: 10px; }
+        
+        /* Buttons */
+        .nav-btn { border: none; padding: 10px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; margin-left: 5px; font-size: 13px; color: white; transition: 0.3s; }
+        .btn-store { background-color: #f39c12; }
+        .btn-settings { background-color: #34495e; }
+        .btn-add { background-color: #27ae60; }
+
+        .main-container { display: flex; flex: 1; height: calc(100vh - 70px); overflow: hidden; }
+        .menu-section { width: 70%; padding: 30px; overflow-y: auto; }
+        .food-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 25px; }
+        
+        .food-card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.05); cursor: pointer; border: 2px solid transparent; position: relative; }
+        .food-card:hover { transform: translateY(-5px); border-color: #ff6b6b; }
+        .food-card.out-of-stock { opacity: 0.6; pointer-events: none; filter: grayscale(100%); }
+        .food-card img { width: 100%; height: 140px; object-fit: cover; }
+        
+        .card-details { padding: 15px; text-align: center; }
+        .stock-badge { background-color: #27ae60; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; position: absolute; top: 10px; left: 10px; }
+        .stock-badge.low { background-color: #e74c3c; }
+
+        .price-row { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .price-original { text-decoration: line-through; color: #999; font-size: 13px; margin-right: 5px; }
+        .price-badge { background-color: #ff4757; color: white; font-size: 10px; padding: 2px 6px; border-radius: 8px; font-weight: bold; }
+        .price-final { color: #27ae60; font-weight: bold; font-size: 20px; margin-top: 2px; }
+        .price-normal { color: #ff6b6b; font-weight: bold; font-size: 18px; }
+
+        .bill-section { width: 30%; background-color: white; box-shadow: -5px 0 20px rgba(0,0,0,0.05); display: flex; flex-direction: column; padding: 25px; z-index: 10; }
+        .order-list { flex-grow: 1; overflow-y: auto; margin-bottom: 10px; }
+        .order-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #ddd; font-size: 14px; }
+        
+        .calc-area { background-color: #fff0f0; padding: 15px; border-radius: 12px; }
+        .calc-row { display: flex; justify-content: space-between; font-size: 14px; color: #555; margin-bottom: 5px; }
+        .total-amount { font-size: 30px; font-weight: bold; color: #d63031; text-align: center; margin-top: 5px; }
+        .pay-btn { width: 100%; background: linear-gradient(45deg, #00b894, #00cec9); color: white; border: none; padding: 15px; border-radius: 12px; font-size: 18px; font-weight: 600; margin-top: 15px; cursor: pointer; }
+
+        /* SALES SCREEN STYLES */
+        #sales-screen { display: none; flex-direction: column; padding: 30px; height: 100%; overflow-y: auto; background: #f4f7f6; }
+        .sales-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        
+        .income-container { display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
+        .income-card { padding: 25px; border-radius: 15px; text-align: center; width: 250px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); color: white; flex-grow: 1; }
+        .card-daily { background: linear-gradient(45deg, #27ae60, #2ecc71); }
+        .card-monthly { background: linear-gradient(45deg, #2980b9, #3498db); }
+        .income-card h2 { margin: 0; font-size: 16px; opacity: 0.9; font-weight: normal; }
+        .income-card h1 { font-size: 36px; margin: 10px 0 0 0; }
+
+        .search-bar-container { background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .search-select { padding: 10px; border: 1px solid #ddd; border-radius: 5px; outline: none; background: #f9f9f9; }
+        .search-btn { background: #e67e22; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .search-btn:hover { background: #d35400; }
+        .search-result-text { margin-left: auto; font-size: 18px; font-weight: bold; color: #34495e; }
+
+        .sales-table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; }
+        .sales-table th, .sales-table td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
+        .sales-table th { background-color: #34495e; color: white; }
+        
+        /* ACTIONS BUTTONS */
+        .action-btn { border: none; padding: 5px 8px; border-radius: 5px; cursor: pointer; color: white; margin-right: 3px; font-size: 14px; }
+        .btn-date { background-color: #3498db; }
+        .btn-edit { background-color: #f39c12; }
+        .btn-delete { background-color: #e74c3c; }
+
+        .back-btn { background: #555; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; }
+
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
+        .modal-content { background-color: white; padding: 30px; border-radius: 15px; width: 300px; text-align: center; }
+        .modal input { width: 90%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
+        .save-btn { background-color: #27ae60; color: white; border:none; padding:10px; border-radius:5px; cursor:pointer; width:100%; margin-top:10px;}
+        .close-btn { background-color: #e74c3c; color: white; border:none; padding:10px; border-radius:5px; cursor:pointer; width:100%; margin-top:5px;}
+
+        @media print { #app-wrapper, .modal { display: none !important; } #printable-receipt { display: block !important; width: 100%; } body { background-color: white; margin: 0; padding: 0; } }
+        #printable-receipt { display: none; padding: 20px; font-family: 'Courier New', monospace; width: 300px; margin: 0 auto; text-align: center; }
+        .receipt-header { font-weight: bold; font-size: 18px; margin-bottom: 10px; text-align: center; }
+        .receipt-item-row { display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px dashed #ccc; padding-bottom: 5px; }
+        .receipt-total { border-top: 2px solid #000; margin-top: 5px; padding-top: 5px; font-weight: bold; font-size: 18px; display: flex; justify-content: space-between; }
+        .strike-price { text-decoration: line-through; color: #555; margin-right: 5px; }
+        .disc-percent { font-style: italic; margin-right: 5px; }
+        .final-price-print { font-weight: bold; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <div id="app-wrapper">
+        <header>
+            <div class="logo"><span id="header-shop-name">🍔 Mudalali Mama</span></div>
+            <div>
+                <button class="nav-btn btn-add" onclick="openModal('itemModal')">+ Item</button>
+                <button class="nav-btn btn-store" onclick="window.location.href='store.html'">📦 Store</button>
+                <button class="nav-btn btn-settings" onclick="showSalesHistory()">💰 Sales</button>
+                <button class="nav-btn btn-settings" onclick="openModal('settingsModal')">⚙️</button>
+            </div>
+        </header>
+
+        <div id="pos-screen" class="main-container">
+            <div class="menu-section">
+                <h3 style="border-left: 5px solid #ff6b6b; padding-left: 10px;">POS Menu</h3>
+                <div class="food-grid" id="foodGrid"><p style="text-align:center;">Connecting...</p></div>
+            </div>
+
+            <div class="bill-section">
+                <div style="font-weight: bold; text-align: center; margin-bottom: 15px;">🧾 Current Order</div>
+                <div class="order-list" id="order-list"><p style="text-align: center; color: #aaa; margin-top: 50px;">No items added</p></div>
+                <div class="calc-area">
+                    <div class="calc-row"><span>Sub Total:</span><span id="sub-total-display">Rs. 0</span></div>
+                    <div class="calc-row" style="align-items: center;"><span>Extra Bill Disc (%):</span><input type="number" id="globalDiscountInput" value="0" min="0" max="100" style="width:50px; text-align:center; padding:5px; border-radius:5px; border:1px solid #ccc;" oninput="calculateFinalTotal()"></div>
+                    <hr>
+                    <div class="total-amount" id="total-price">Rs. 0</div>
+                </div>
+                <button class="pay-btn" onclick="saveAndPrintBill()">✅ PAY & PRINT</button>
+            </div>
+        </div>
+
+        <div id="sales-screen">
+            <div class="sales-header">
+                <h1>📈 Sales History & Actions</h1>
+                <button class="back-btn" onclick="showPOS()">⬅ Back to POS</button>
+            </div>
+            
+            <div class="income-container">
+                <div class="income-card card-daily">
+                    <h2 id="label-today">📅 Today's Income</h2>
+                    <h1 id="today-total">Rs. 0</h1>
+                </div>
+                <div class="income-card card-monthly">
+                    <h2 id="label-month">🗓️ This Month</h2>
+                    <h1 id="month-total">Rs. 0</h1>
+                </div>
+            </div>
+
+            <div class="search-bar-container">
+                <label>Year:</label>
+                <select id="searchYear" class="search-select"></select>
+                <label>Month:</label>
+                <select id="searchMonth" class="search-select">
+                    <option value="0">January</option><option value="1">February</option><option value="2">March</option>
+                    <option value="3">April</option><option value="4">May</option><option value="5">June</option>
+                    <option value="6">July</option><option value="7">August</option><option value="8">September</option>
+                    <option value="9">October</option><option value="10">November</option><option value="11">December</option>
+                </select>
+                <button class="search-btn" onclick="filterSalesByMonth()">🔍 Search</button>
+                <div class="search-result-text">Period Total: <span id="filtered-total" style="color: #27ae60;">Rs. 0</span></div>
+            </div>
+
+            <table class="sales-table">
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Items Sold</th>
+                        <th>Total Amount</th>
+                        <th style="width:120px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="sales-table-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="printable-receipt"></div>
+
+    <div id="itemModal" class="modal">
+        <div class="modal-content">
+            <h3>Add New Item</h3>
+            <input type="text" id="newItemName" placeholder="Item Name">
+            <input type="number" id="newItemPrice" placeholder="Price (Rs.)">
+            <input type="number" id="newItemQty" placeholder="Initial Stock Qty">
+            <div style="display:flex; align-items:center; gap:5px; margin: 10px 0;">
+                <label style="font-size:12px; color:#555;">Discount (%):</label>
+                <input type="number" id="newItemDiscount" placeholder="0" style="width:50px; margin:0;" value="0">
+            </div>
+            <input type="text" id="newItemImage" placeholder="Image URL (Optional)">
+            <button class="save-btn" id="saveBtn">Save Item</button>
+            <button class="close-btn" onclick="closeModal('itemModal')">Cancel</button>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <h3>⚙️ Shop Settings</h3>
+            <input type="text" id="settingShopName" placeholder="Shop Name">
+            <input type="text" id="settingAddress" placeholder="Address">
+            <input type="text" id="settingPhone" placeholder="Phone">
+            <button class="save-btn" onclick="saveSettings()">Save Settings</button>
+            <button class="close-btn" onclick="closeModal('settingsModal')">Close</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, updateDoc, increment, deleteDoc, doc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyBOkJ57KpM-WO0pY-tQPrFMf9j4s14mdxU", authDomain: "poss-193d0.firebaseapp.com", projectId: "poss-193d0", storageBucket: "poss-193d0.firebasestorage.app", messagingSenderId: "616390949244", appId: "1:616390949244:web:daba7e7082648455910cf9", measurementId: "G-2F3S2VT4SK" };
+        const app = initializeApp(firebaseConfig); const db = getFirestore(app);
+        const itemsCollection = collection(db, "food_items"); const salesCollection = collection(db, "sales_history");
+
+        // Settings Logic
+        let defaultSettings = { name: "Mudalali Mama", address: "110; YAPAHUWA ROAD MAHO", phone: "0786445337" };
+        function getSettings() { const s = localStorage.getItem('mm_shop_settings'); return s ? JSON.parse(s) : defaultSettings; }
+        function initSettings() { const s = getSettings(); document.getElementById('header-shop-name').innerText = "🍔 " + s.name; document.getElementById('settingShopName').value = s.name; document.getElementById('settingAddress').value = s.address; document.getElementById('settingPhone').value = s.phone; }
+        window.saveSettings = function() { const s = { name: document.getElementById('settingShopName').value, address: document.getElementById('settingAddress').value, phone: document.getElementById('settingPhone').value }; localStorage.setItem('mm_shop_settings', JSON.stringify(s)); document.getElementById('header-shop-name').innerText = "🍔 " + s.name; alert("Saved!"); window.closeModal('settingsModal'); }
+        initSettings();
+
+        // Populate Years
+        const yearSelect = document.getElementById('searchYear');
+        const currentYear = new Date().getFullYear();
+        for(let i = 0; i <= 5; i++) {
+            let option = document.createElement('option');
+            option.value = currentYear - i;
+            option.innerText = currentYear - i;
+            yearSelect.appendChild(option);
+        }
+        document.getElementById('searchMonth').value = new Date().getMonth();
+
+        // Render Items
+        onSnapshot(itemsCollection, (snapshot) => {
+            const grid = document.getElementById('foodGrid'); grid.innerHTML = "";
+            snapshot.forEach((docSnap) => {
+                const item = docSnap.data(); const id = docSnap.id; const qty = item.qty || 0;
+                const card = document.createElement('div'); card.className = `food-card ${qty <= 0 ? 'out-of-stock' : ''}`;
+                let discount = item.discount || 0; let finalPrice = item.price; let priceHTML = "";
+                if (discount > 0) { finalPrice = Math.round(item.price - (item.price * discount / 100)); priceHTML = `<div class="price-row"><div style="display:flex; align-items:center;"><span class="price-original">Rs.${item.price}</span><span class="price-badge">-${discount}%</span></div><div class="price-final">Rs.${finalPrice}</div></div>`; } else { priceHTML = `<div class="price-normal">Rs.${item.price}</div>`; }
+                let badgeClass = qty < 5 ? 'stock-badge low' : 'stock-badge'; let badgeText = qty > 0 ? `${qty} Left` : `Out of Stock`;
+                card.innerHTML = `<span class="${badgeClass}">${badgeText}</span><img src="${item.img || 'https://via.placeholder.com/150'}"><div class="card-details"><div class="food-name">${item.name}</div>${priceHTML}</div>`;
+                card.onclick = () => window.addToBill(id, item.name, finalPrice, item.price, discount);
+                grid.appendChild(card);
+            });
+        });
+
+        document.getElementById('saveBtn').onclick = async () => {
+            const name = document.getElementById('newItemName').value;
+            const price = document.getElementById('newItemPrice').value;
+            const qty = document.getElementById('newItemQty').value;
+            const discount = document.getElementById('newItemDiscount').value;
+            const img = document.getElementById('newItemImage').value;
+            if(name && price) {
+                await addDoc(itemsCollection, { name, price: Number(price), qty: Number(qty) || 0, discount: Number(discount) || 0, img });
+                window.closeModal('itemModal');
+                document.getElementById('newItemName').value = ''; document.getElementById('newItemPrice').value = ''; document.getElementById('newItemQty').value = '';
+            }
+        };
+
+        // Bill Logic
+        let currentSubTotal = 0; let currentBillItems = []; let isFirst = true;
+        window.addToBill = function(id, name, finalPrice, originalPrice, discount) {
+            const list = document.getElementById('order-list'); if(isFirst) { list.innerHTML = ''; isFirst = false; }
+            currentSubTotal += parseInt(finalPrice);
+            currentBillItems.push({ id, name, finalPrice, originalPrice, discount });
+            let displayName = name; let displayPrice = `Rs. ${finalPrice}`; if(discount > 0) displayName += ` <span style="font-size:10px; color:red;">(-${discount}%)</span>`;
+            const row = document.createElement('div'); row.className = 'order-item'; row.innerHTML = `<span>${displayName}</span><span>${displayPrice}</span>`;
+            list.appendChild(row); list.scrollTop = list.scrollHeight;
+            window.calculateFinalTotal();
+        }
+        window.calculateFinalTotal = function() {
+            const globalDiscPercent = parseFloat(document.getElementById('globalDiscountInput').value) || 0;
+            const discountAmount = Math.round(currentSubTotal * (globalDiscPercent / 100));
+            document.getElementById('sub-total-display').innerText = "Rs. " + currentSubTotal;
+            document.getElementById('total-price').innerText = "Rs. " + (currentSubTotal - discountAmount);
+        }
+        window.saveAndPrintBill = async function() {
+            if(currentSubTotal === 0) return alert("Empty Bill!");
+            const s = getSettings();
+            const globalDiscPercent = parseFloat(document.getElementById('globalDiscountInput').value) || 0;
+            const discountAmount = Math.round(currentSubTotal * (globalDiscPercent / 100));
+            const netTotal = currentSubTotal - discountAmount;
+            let receiptHTML = `<div class="receipt-header">${s.name}<br><span style="font-size:12px; font-weight:normal;">${s.address}</span><br><span style="font-size:12px; font-weight:normal;">Tel: ${s.phone}</span><hr></div><div style="text-align:left; margin-bottom:10px;">Date: ${new Date().toLocaleString()}</div><div>`;
+            currentBillItems.forEach(item => {
+                let priceHTML = (item.discount > 0) ? `<span class="strike-price">Rs.${item.originalPrice}</span><span class="disc-percent">(${item.discount}%)</span><span class="final-price-print">Rs.${item.finalPrice}</span>` : `<span class="final-price-print">Rs.${item.finalPrice}</span>`;
+                receiptHTML += `<div class="receipt-item-row"><div style="display:flex; flex-direction:column; width:100%;"><div class="receipt-item-name">${item.name}</div><div class="receipt-price-details">${priceHTML}</div></div></div>`;
+            });
+            receiptHTML += `</div><hr style="border-top:1px dashed #000;"><div class="receipt-item-row"><span>Sub Total:</span><span>Rs. ${currentSubTotal}</span></div>${globalDiscPercent > 0 ? `<div class="receipt-item-row"><span>Bill Disc (${globalDiscPercent}%):</span><span>- Rs. ${discountAmount}</span></div>` : ''}<div class="receipt-total"><span>NET TOTAL</span><span>Rs. ${netTotal}</span></div><br><div style="text-align:center; font-size:12px;">Thank You!</div>`;
+            document.getElementById('printable-receipt').innerHTML = receiptHTML;
+            try {
+                await Promise.all(currentBillItems.map(item => updateDoc(doc(db, "food_items", item.id), { qty: increment(-1) })));
+                await addDoc(salesCollection, { items: currentBillItems.map(i => i.name), subTotal: currentSubTotal, globalDiscount: globalDiscPercent, total: netTotal, timestamp: serverTimestamp() });
+                window.print();
+            } catch (error) { alert("Error: " + error.message); }
+            currentSubTotal = 0; currentBillItems = []; isFirst = true; document.getElementById('globalDiscountInput').value = 0; document.getElementById('order-list').innerHTML = '<p style="text-align: center; color: #aaa; margin-top: 50px;">No items added</p>'; window.calculateFinalTotal();
+        }
+        
+        // --- SALES LOGIC & EDIT/DELETE/DATE ---
+        let allSalesData = [];
+
+        window.showSalesHistory = () => {
+            document.getElementById('pos-screen').style.display = 'none';
+            document.getElementById('sales-screen').style.display = 'flex';
+            window.filterSalesByMonth();
+        }
+        window.showPOS = () => {
+            document.getElementById('sales-screen').style.display = 'none';
+            document.getElementById('pos-screen').style.display = 'flex';
+        }
+        window.openModal = (id) => document.getElementById(id).style.display = "flex";
+        window.closeModal = (id) => document.getElementById(id).style.display = "none";
+
+        const q = query(salesCollection, orderBy("timestamp", "desc"));
+        onSnapshot(q, (snapshot) => {
+            allSalesData = [];
+            let todayIncome = 0;
+            let monthIncome = 0;
+            const now = new Date();
+            const todayStr = now.toDateString();
+            const currentMonthStr = now.getFullYear() + "-" + now.getMonth();
+
+            // UPDATE DYNAMIC TEXT FOR HEADERS
+            const monthName = now.toLocaleString('default', { month: 'long' });
+            const todayDateStr = now.toLocaleDateString();
+            document.getElementById('label-today').innerText = `📅 Today's Income (${todayDateStr})`;
+            document.getElementById('label-month').innerText = `🗓️ This Month (${monthName})`;
+
+            snapshot.forEach((docSnap) => {
+                const sale = docSnap.data();
+                if(sale.timestamp) {
+                    const dateObj = sale.timestamp.toDate();
+                    allSalesData.push({ ...sale, dateObj: dateObj, id: docSnap.id });
+
+                    const saleMonthStr = dateObj.getFullYear() + "-" + dateObj.getMonth();
+                    if(dateObj.toDateString() === todayStr) todayIncome += sale.total;
+                    if(saleMonthStr === currentMonthStr) monthIncome += sale.total;
+                }
+            });
+
+            document.getElementById('today-total').innerText = "Rs. " + todayIncome;
+            document.getElementById('month-total').innerText = "Rs. " + monthIncome;
+            window.filterSalesByMonth();
+        });
+
+        window.filterSalesByMonth = () => {
+            const selectedYear = parseInt(document.getElementById('searchYear').value);
+            const selectedMonth = parseInt(document.getElementById('searchMonth').value);
+            const tbody = document.getElementById('sales-table-body');
+            tbody.innerHTML = "";
+            let periodTotal = 0;
+
+            const filteredSales = allSalesData.filter(sale => {
+                return sale.dateObj.getFullYear() === selectedYear && sale.dateObj.getMonth() === selectedMonth;
+            });
+
+            if (filteredSales.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#999;">No records found.</td></tr>';
+            } else {
+                filteredSales.forEach(sale => {
+                    periodTotal += sale.total;
+                    const dateStr = sale.dateObj.toLocaleString();
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${dateStr}</td>
+                        <td>${sale.items.join(", ")}</td>
+                        <td style="font-weight:bold; color:#27ae60;">Rs. ${sale.total}</td>
+                        <td>
+                            <button class="action-btn btn-date" onclick="window.editSaleDate('${sale.id}')" title="Edit Date">📅</button>
+                            <button class="action-btn btn-edit" onclick="window.editSalePrice('${sale.id}', ${sale.total})" title="Edit Price">✏️</button>
+                            <button class="action-btn btn-delete" onclick="window.deleteSale('${sale.id}')" title="Delete Bill">🗑️</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+            document.getElementById('filtered-total').innerText = "Rs. " + periodTotal;
+        }
+
+        // --- EDIT FUNCTIONS ---
+        window.deleteSale = async (id) => {
+            if(confirm("Are you sure? This cannot be undone.")) {
+                try { await deleteDoc(doc(db, "sales_history", id)); alert("Deleted!"); } catch (e) { alert("Error: " + e.message); }
+            }
+        }
+
+        window.editSalePrice = async (id, currentTotal) => {
+            const newPrice = prompt("Enter new Total Amount:", currentTotal);
+            if(newPrice && !isNaN(newPrice)) {
+                await updateDoc(doc(db, "sales_history", id), { total: parseFloat(newPrice) });
+                alert("Price Updated!");
+            }
+        }
+
+        window.editSaleDate = async (id) => {
+            const newDate = prompt("Enter new Date (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
+            if (newDate) {
+                const timestamp = new Date(newDate);
+                if (!isNaN(timestamp.getTime())) {
+                    await updateDoc(doc(db, "sales_history", id), { timestamp: timestamp });
+                    alert("Date Updated!");
+                } else {
+                    alert("Invalid Date!");
+                }
+            }
+        }
+    </script>
+</body>
+</html>
